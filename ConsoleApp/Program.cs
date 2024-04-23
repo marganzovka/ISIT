@@ -2,31 +2,26 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Globalization;
 
-class Program
+class Task
 {
-    static void Main(string[] args)
+    // Путь к папке с файлами
+    string folderPath = "../../../../ConsoleApp";
+    public void Run()
     {
         // Запрос пользователя на ввод имен файлов или команды
-        Console.WriteLine("Введите названия файлов с расширениями через пробел или 'обработать все файлы':");
+        Console.WriteLine("Введите названия файлов с расширениями. Если их несколько, то вводите через пробел");
         string input = Console.ReadLine();
-
-        // Если пользователь выбрал "обработать все файлы", запускаем функцию обработки всех файлов
-        if (input.ToLower() == "обработать все файлы")
-            ProcessAllFiles();
-        // В противном случае обрабатываем только выбранные файлы
-        else
-            ProcessSelectedFiles(input.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+      
+        ProcessSelectedFiles(input.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
 
         Console.WriteLine("Готово!");
     }
 
     // Функция обработки выбранных файлов
-    static void ProcessSelectedFiles(string[] fileNames)
+    void ProcessSelectedFiles(string[] fileNames)
     {
-        // Путь к папке с файлами
-        string folderPath = "../../../../res";
-
         // Обработка каждого выбранного файла
         foreach (string fileName in fileNames)
         {
@@ -45,22 +40,9 @@ class Program
         }
     }
 
-    // Функция обработки всех файлов в папке
-    static void ProcessAllFiles()
-    {
-        string folderPath = "../../../res";
-
-        // Обработка каждого файла в папке
-        foreach (string filePath in Directory.GetFiles(folderPath))
-        {
-            // Анализ файла и запись результатов в файл
-            var results = AnalyzeFile(filePath);
-            WriteResultsToFile(Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileName(filePath) + ".tab"), results);
-        }
-    }
 
     // Функция анализа файла для подсчета частоты байтов
-    static Dictionary<byte, int> AnalyzeFile(string filePath)
+    Dictionary<byte, int> AnalyzeFile(string filePath)
     {
         var byteFrequency = new Dictionary<byte, int>();
         using (FileStream fs = new FileStream(filePath, FileMode.Open))
@@ -78,25 +60,35 @@ class Program
     }
 
     // Функция записи результатов в файл
-    static void WriteResultsToFile(string outputPath, Dictionary<byte, int> byteFrequency)
+    void WriteResultsToFile(string outputPath, Dictionary<byte, int> byteFrequency)
     {
+        
+
+        // Создание пути для результирующего файла в подпапке
+        string resultFilePath = Path.Combine(folderPath, Path.GetFileName(outputPath));
+
+        // Настройка форматирования чисел с использованием точки в качестве разделителя десятичных разрядов
+        CultureInfo culture = CultureInfo.InvariantCulture;
+
+
         int totalBytes = byteFrequency.Sum(pair => pair.Value);
         double entropy = CalculateEntropy(byteFrequency);
 
-        using (StreamWriter writer = new StreamWriter(outputPath))
+        // Запись результатов в файл в подпапке
+        using (StreamWriter writer = new StreamWriter(resultFilePath))
         {
-            writer.WriteLine($"{totalBytes} Размер файла");
-            writer.WriteLine($"{entropy} Энтропия\n");
-            writer.WriteLine($"Байт\t\tЧастота");
+            writer.WriteLine($"{totalBytes}\tРазмер файла");
+            writer.WriteLine($"{entropy.ToString(culture)}\tЭнтропия");
+            writer.WriteLine($"Байт\tЧастота");
             foreach (var entry in byteFrequency.OrderByDescending(pair => pair.Value))
             {
-                writer.WriteLine($"{entry.Key}\t\t{entry.Value}");
+                writer.WriteLine($"{entry.Key}\t{entry.Value}");
             }
         }
     }
 
     // Функция для расчета энтропии
-    static double CalculateEntropy(Dictionary<byte, int> byteFrequency)
+    double CalculateEntropy(Dictionary<byte, int> byteFrequency)
     {
         int totalBytes = byteFrequency.Sum(pair => pair.Value);
         double entropy = 0.0;
@@ -106,5 +98,17 @@ class Program
             entropy -= probability * Math.Log(probability, 2);
         }
         return entropy;
+    }
+}
+
+
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Task task = new Task();
+        task.Run();
+
     }
 }
